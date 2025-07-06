@@ -1,0 +1,193 @@
+openapi: 3.0.0
+info:
+  title: Crypto Dashboard API
+  version: 1.0.0
+  description: API para cadastro de usuários, autenticação e gerenciamento de cotações de criptomoedas (BRL spot).
+servers:
+  - url: http://localhost:5000
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: session
+  schemas:
+    Usuario:
+      type: object
+      properties:
+        id:
+          type: integer
+        nome:
+          type: string
+        email:
+          type: string
+        criado_em:
+          type: string
+          format: date-time
+    Cripto:
+      type: object
+      properties:
+        symbol:
+          type: string
+          example: BTC
+        preco:
+          type: number
+          format: float
+          example: 511000.00
+        atualizado_em:
+          type: string
+          example: '28-06-2025 12:15:23'
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        senha:
+          type: string
+paths:
+  /cadastrar_usuario:
+    post:
+      summary: Cadastra um novo usuário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/Usuario'
+                - properties:
+                    senha:
+                      type: string
+      responses:
+        '201':
+          description: Usuário criado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+  /buscar_usuario/{id}:
+    get:
+      summary: Busca usuário por ID
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        '200':
+          description: Usuário encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+        '404':
+          description: Não encontrado
+  /buscar_usuarios:
+    get:
+      summary: Lista todos os usuários
+      responses:
+        '200':
+          description: Lista de usuários
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Usuario'
+  /deletar_usuario/{id}:
+    delete:
+      summary: Deleta usuário por ID
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        '204':
+          description: Usuário deletado
+  /login:
+    post:
+      summary: Autentica usuário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '204':
+          description: Login bem-sucedido
+        '401':
+          description: Credenciais inválidas
+  /logout:
+    post:
+      summary: Encerra sessão do usuário
+      responses:
+        '204':
+          description: Logout bem-sucedido
+  /cryptos:
+    get:
+      summary: Lista todas as criptomoedas cadastradas
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Lista de criptomoedas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Cripto'
+        '401':
+          description: Não autorizado
+    post:
+      summary: Cadastra nova criptomoeda (busca preço em BRL)
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                symbol:
+                  type: string
+                  example: BTC
+      responses:
+        '201':
+          description: Criptomoeda cadastrada
+        '401':
+          description: Não autorizado
+  /cryptos/atualizar:
+    post:
+      summary: Atualiza preços de todas as criptomoedas
+      security:
+        - cookieAuth: []
+      responses:
+        '204':
+          description: Preços atualizados
+        '401':
+          description: Não autorizado
+  /cryptos/{symbol}:
+    delete:
+      summary: Remove criptomoeda pelo símbolo
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: symbol
+          schema:
+            type: string
+          required: true
+      responses:
+        '204':
+          description: Removido com sucesso
+        '401':
+          description: Não autorizado
